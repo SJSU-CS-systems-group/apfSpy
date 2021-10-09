@@ -8,6 +8,7 @@
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 #include "dmgParser.h"
+#include "apfs.h"
 
 #if defined(WIN32) || defined(__WIN32) ||defined(__WIN32__) || defined(__NT__) ||defined(_WIN64)    
            #	include <Windows.h>
@@ -148,7 +149,11 @@ int decompress_to_file(char *compressed, unsigned long comp_size, int block_no)
 		}
 	}
 
-	if (fwrite(decompressed, 1, INFLATE_BUF_LEN, output_buf) == 0)
+	remaining = inflate_stream.total_out % INFLATE_BUF_LEN;
+	if (remaining == 0 && inflate_stream.total_out > 0)
+		remaining = INFLATE_BUF_LEN;
+		
+	if (fwrite(decompressed, 1, remaining, output_buf) == 0)
 		printf("Error Writing to output file!\n");
 	else
 		printf("Decompressed Successfully to file 'decompressed' size - %lu\n", inflate_stream.total_out);
@@ -352,6 +357,12 @@ int printDmgBlocks(xmlDoc *doc, xmlNode *blkxNode,FILE* stream)
 		BLKXTable* dataBlk = NULL; 
 		dataBlk=decodeDataBlk(dataNoWs);   // decode the data block.
 		readDataBlks(dataBlk, stream, i);     // loop through the chunks to decompress each.
+		
+		if (strstr(name, "Apple_APFS") != NULL) {
+			printf("Parsing APFS\n");
+			parse_APFS(i);
+		}
+
 		free(data);
 		free(dataNoWs);
 
