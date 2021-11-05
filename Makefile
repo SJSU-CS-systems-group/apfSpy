@@ -1,6 +1,6 @@
 CC=gcc
-INCLUDES= -I/usr/include/libxml2 -lxml2
-CFLAGS= -g -ggdb $(INCLUDES)
+INCLUDES= -I/usr/include/libxml2 -lxml2 -lz
+CFLAGS= -g -ggdb -Wno-format $(INCLUDES)
 DEPS = dmgParser.h apfs.h
 OBJ = DMG.o base64.o apfs.o
 
@@ -13,4 +13,4 @@ make:	$(OBJ)
 .PHONY: clean
 
 clean:
-	rm -f *.o DMG
+	rm -rf *.o DMG decompressed* *.txt
