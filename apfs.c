@@ -731,6 +731,7 @@ int searchBTree(FILE *apfsImage, uint32_t blockSize, uint64_t bNodeAddr,  uint8_
 	return -1;
 }
 
+
 /*
  * Searches an Omap for the physical address of the object corresponding to the given virtual address
  *
@@ -849,154 +850,256 @@ apfs_superblock_t findValidVolumeSuperBlock(FILE *apfs,omap_phys_t omapStructure
 	return volumeSuperBlock;
 }
 
-btree_node_phys_t parseAPFSVolumeBlock(FILE *apfs, apfs_superblock_t volumeSuperBlock,APFS_SuperBlk containerSuperBlk,int *endOfOmapBtreeBtree)
+uint64_t parseAPFSVolumeBlock(FILE *apfs, apfs_superblock_t volumeSuperBlock,APFS_SuperBlk containerSuperBlk,command_line_args args)
 {
-        // Go to omap id
-        fseek(apfs,volumeSuperBlock.apfs_omap_oid * containerSuperBlk.BlockSize,SEEK_SET);
-        omap_phys_t omapStructureVol;			
-        unsigned int sizeofOmapStructure = 0;
+	// Go to omap id
+	fseek(apfs,volumeSuperBlock.apfs_omap_oid * containerSuperBlk.BlockSize,SEEK_SET);
+	omap_phys_t omapStructureVol;			
+	unsigned int sizeofOmapStructure = 0;
 
-        /* Initialize volume path */
-        snprintf(path, sizeof(path), "%s", volumeSuperBlock.apfs_volname);
+	/* Initialize volume path */
+	snprintf(path, sizeof(path), "%s", volumeSuperBlock.apfs_volname);
 
-        if ((sizeofOmapStructure = fread(&omapStructureVol, 1, sizeof(omapStructureVol), apfs)) < 0) {
-                printf("Error reading from apfs File! [%d] size = %lu\n", sizeofOmapStructure, sizeof(omapStructureVol));
-        }
+	if ((sizeofOmapStructure = fread(&omapStructureVol, 1, sizeof(omapStructureVol), apfs)) < 0) {
+		printf("Error reading from apfs File! [%d] size = %lu\n", sizeofOmapStructure, sizeof(omapStructureVol));
+	}
 
-        dprintf("Parsed the OMAP Structure of Volume Super Block of Size = %u\n", sizeofOmapStructure);
-        dprintf("Tree oid is: %lu\n",omapStructureVol.om_tree_oid);	
-        // Go to B tree.
-        fseek(apfs, omapStructureVol.om_tree_oid * containerSuperBlk.BlockSize,SEEK_SET);
+	if (args.fs_structure != 1) {
+		printf("Parsed the OMAP Structure of Volume Super Block of Size = %u\n", sizeofOmapStructure);
+		printf("Tree oid is: %lu\n",omapStructureVol.om_tree_oid);	
+	}
+	// Go to B tree.
+	fseek(apfs,	omapStructureVol.om_tree_oid * containerSuperBlk.BlockSize,SEEK_SET);
 
-        btree_node_phys_t omapBTree;
-        int endOfOmapBtree = ftell(apfs) + 4096;
-        dprintf(" EndOfVolumeBTree is: %d",endOfOmapBtree);
-        omapBTree = readAndPrintBtree(apfs);
+	btree_node_phys_t omapBTree;
+	int startOfOmapBtree = ftell(apfs);
+	if (args.fs_structure != 1)
+		printf(" EndOfVolumeBTree is: %d",startOfOmapBtree);
+	omapBTree = readAndPrintBtree(apfs);
 
-        // Now for the table length loop to get the key value pairs.
-        // Check if the kv flag is set to determine if it is kvoff or kloc
-        kvoff_t keyValueStruct[omapBTree.btn_table_space.len/4] ;
-        for(int i=0;i<omapBTree.btn_table_space.len;i=i+4)
-        {
-                unsigned int sizeofkvoff_t = 0;
-                sizeofkvoff_t=fread(&keyValueStruct,1,4,apfs);
-                if(keyValueStruct->k !=0 || keyValueStruct->v != 0)
-                {
-                        dprintf("Parsed sizeofkvoff_t of table of COntents! Size = %u\n", sizeofkvoff_t);
-                        dprintf("btn_data_first_key = %" PRIu16"\n",keyValueStruct->k);	
-                        dprintf("btn_data_first_val = %d\n", keyValueStruct->v);	
-                }
+	// Now for the table length loop to get the key value pairs.
+	// Check if the kv flag is set to determine if it is kvoff or kloc
+	kvoff_t keyValueStruct[omapBTree.btn_table_space.len/4] ;
+	for(int i=0;i<omapBTree.btn_table_space.len;i=i+4)
+	{
+		unsigned int sizeofkvoff_t = 0;
+		sizeofkvoff_t=fread(&keyValueStruct,1,4,apfs);
+		if(keyValueStruct->k !=0 || keyValueStruct->v != 0)
+		{
+			//printf("Parsed sizeofkvoff_t of table of COntents! Size = %u\n", sizeofkvoff_t);
+			//printf("btn_data_first_key = %" PRIu16"\n",keyValueStruct->k);	
+			//printf("btn_data_first_val = %d\n", keyValueStruct->v);	
+		}
 
 
-        }
-        fseek(apfs,16,SEEK_CUR);
-        int keyStartAddress = ftell(apfs);
-        tApFS_0B_ObjectsMap_Key_t key;
-        tApFS_0B_ObjectsMap_Value_t value;
-        fread(&key,1,16,apfs);
-        dprintf("The oid and xid are %lu and %lu\n",key.ObjectIdent,key.Transaction);
+	}
+	fseek(apfs,16,SEEK_CUR);
+	int keyStartAddress = ftell(apfs);
+	tApFS_0B_ObjectsMap_Key_t key;
+	tApFS_0B_ObjectsMap_Value_t value;
+	fread(&key,1,16,apfs);
+	if (args.fs_structure != 1)
+		printf("The oid and xid are %lu and %lu\n",key.ObjectIdent,key.Transaction);
 
-        // check if it is root node or leaf node
-        // find the info address for root node.
-        int startOfBTreeInfo = endOfOmapBtree - (40+32);
-        dprintf(" startOfBTreeInfo is: %d\n",startOfBTreeInfo);
-        fseek(apfs,startOfBTreeInfo,SEEK_SET);
-        fread(&value,1,16,apfs);
-        dprintf("The flag size and physical address are %u, %u and %x and in decimal %d\n",value.Flags,value.Size,value.Address,value.Address);
+	// check if it is root node or leaf node
+	// find the info address for root node.
+	int startOfBTreeInfo = startOfOmapBtree + 4096 - 56;
+	if (args.fs_structure != 1)
+		printf(" startOfBTreeInfo is: %d\n",startOfBTreeInfo);
+	fseek(apfs,startOfBTreeInfo,SEEK_SET);
+	fread(&value,1,16,apfs);
+	if (args.fs_structure != 1)
+		printf("The flag size and physicall address are %u, %u and %x and in decimal %d\n",value.Flags,value.Size,value.Address,value.Address);
 
-        //Go to the Tree inside the VolOmap->Btree->Btree
-        fseek(apfs,value.Address * containerSuperBlk.BlockSize,SEEK_SET);
-        dprintf(" Vol Omap->Btree->Btree %d and in hex %x\n",ftell(apfs),ftell(apfs));
-        // go to Btree adress
-
-        btree_node_phys_t omapBTreeBtree;
-        *endOfOmapBtreeBtree = ftell(apfs) + 4096;
-        dprintf(" EndOfBTree is: %d\n",*endOfOmapBtreeBtree);
-        omapBTreeBtree = readAndPrintBtree(apfs);
-
-        return omapBTreeBtree;
+	return startOfOmapBtree;
 }
 
-void parseFSTree(FILE* apfs,btree_node_phys_t fsBtree,int endOfOmapBtreeBtree)
+/* Anirudh's Version (Old)
+ * Assumes FS Tree is only one node
+ */
+
+// void parseFSTree(FILE* apfs,btree_node_phys_t fsBtree,int endOfOmapBtreeBtree, command_line_args args)
+// {
+// 	struct fs_obj obj = {0};
+// 	uint64_t cur = 0;
+
+// 	// Now for the table length loop to get the key value pairs.
+// 	// Check if the kv flag is set to determine if it is kvoff or kloc
+// 	kvloc_t keyValueStructure[fsBtree.btn_table_space.len/8] ;
+
+// 	for(int i=0;i<fsBtree.btn_table_space.len/8; i++)
+// 	{
+// 		unsigned int sizeofkvloc_t = 0;
+// 		sizeofkvloc_t=fread(&keyValueStructure[i],1,8,apfs);
+// 		if(keyValueStructure[i].k.len !=0 || keyValueStructure[i].v.len != 0)
+// 		{
+// 			//printf("Parsed sizeofkvoff_t of table of COntents! Size = %u\n", sizeofkvloc_t);
+// 			//printf("The first offset using array is %" PRIu16"\n",keyValueStructure[i].k.off);
+// 			//printf("The first offset using array is %" PRIu16"\n",keyValueStructure[i].k.len);		
+
+// 			//printf("btn_data_first_val offset= %d\n",  keyValueStructure[i].v.off);	
+// 			//printf("btn_data_first_val length= %d\n",  keyValueStructure[i].v.len);	
+// 		}
+// 	}
+
+// 	int keyStartAddressBtreeBtree = ftell(apfs);
+// 	int valueStartAddressforfstree = endOfOmapBtreeBtree - 40;
+// 	if (args.fs_structure != 1)
+// 		printf("The size of keyvaluestruct is %d\n",sizeof(keyValueStructure));
+// 	//printf("The fsBtree.btn_table_space.len/8 is %d\n",fsBtree.btn_table_space.len/8);
+// 	for(int h=0;h < (fsBtree.btn_table_space.len/8);h++)
+// 	{
+
+// 		uint64_t j_key_header=0;
+
+// 		fseek(apfs,keyStartAddressBtreeBtree,SEEK_SET);	   
+// 		fseek(apfs,keyValueStructure[h].k.off,SEEK_CUR);
+
+// 		fread(&j_key_header,1,8,apfs);
+// 		// Accessing the object typede
+// 		uint8_t objType=0;
+// 		objType=(j_key_header & OBJ_TYPE_MASK) >> OBJ_TYPE_SHIFT;
+// 		cur = j_key_header & OBJ_ID_MASK;
+		
+// 		//printf("##############################################################3\n");
+// 		//printf("The object Type is: %d & ID is %lu (at %0x)\n",objType, cur, ftell(apfs));
+// 		parseFSObjects(objType, apfs, keyValueStructure[h].k.len, valueStartAddressforfstree
+// 				, keyValueStructure[h].v.off, keyValueStructure[h].v.len, &obj);
+// 		obj.prev_oid = cur;
+		
+// 	}//for the table of contents
+// 	printf("\n");
+// }
+
+
+/*
+ * Visits and calls the parseFSObject on each node of the FS-Tree
+ *
+ * Parameters
+ * 
+ * FILE apfsImage:		A file stream for the APFS disk image
+ * uint32_t blockSize:	Typically 4096
+ * uint64_t fsTreeAddr:	The physical address of the FS-Tree root node
+ */
+void parseFSTree(FILE *apfsImage, uint32_t blockSize, uint64_t omapAddr, uint64_t fsTreeAddr, command_line_args args)
 {
-        struct fs_obj obj = {0};
-        uint64_t cur = 0;
+	struct fs_obj obj = {0};
+	uint64_t cur = 0;
 
-        if (args.fs_structure == 0)
-                return;
+	//Seek to the B-Tree node
+	fseek(apfsImage, fsTreeAddr, SEEK_SET);
 
-        // Now for the table length loop to get the key value pairs.
-        // Check if the kv flag is set to determine if it is kvoff or kloc
-        kvloc_t keyValueStructure[fsBtree.btn_table_space.len/8] ;
+	//Read the node struct
+	btree_node_phys_t bNodeStruct;
+	fread(&bNodeStruct, 1, sizeof(bNodeStruct), apfsImage);
 
-        for(int i=0;i<fsBtree.btn_table_space.len/8; i++)
-        {
-                unsigned int sizeofkvloc_t = 0;
-                sizeofkvloc_t=fread(&keyValueStructure[i],1,8,apfs);
-                if(keyValueStructure[i].k.len !=0 || keyValueStructure[i].v.len != 0)
-                {
-                        dprintf("Parsed sizeofkvoff_t of table of COntents! Size = %u\n", sizeofkvloc_t);
-                        dprintf("The first offset using array is %" PRIu16"\n",keyValueStructure[i].k.off);
-                        dprintf("The first offset using array is %" PRIu16"\n",keyValueStructure[i].k.len);		
+	//Read node flags
+	int rootNode = bNodeStruct.btn_flags & 1;
+	int leafNode = (bNodeStruct.btn_flags >> 1) & 1;
+	int fixedSize = (bNodeStruct.btn_flags >> 2) & 1;
 
-                        dprintf("btn_data_first_val offset= %d\n",  keyValueStructure[i].v.off);	
-                        dprintf("btn_data_first_val length= %d\n",  keyValueStructure[i].v.len);	
-                }
-        }
+	//The table of contents always starts 56 bytes into the structure
+	//The node header is 32 bytes and the preceeding fields of the body are 24 bytes
+	int tableStartAddr = fsTreeAddr + 56;
+	//The key area starts after the table of contents (and grows downward)
+	int keyStartAddr = tableStartAddr + bNodeStruct.btn_table_space.len;
 
-        int keyStartAddressBtreeBtree = ftell(apfs);
-        int valueStartAddressforfstree = endOfOmapBtreeBtree - 40;
-        dprintf("The size of keyvaluestruct is %d\n",sizeof(keyValueStructure));
-        dprintf("The fsBtree.btn_table_space.len/8 is %d\n",fsBtree.btn_table_space.len/8);
-        for(int h=0;h < (fsBtree.btn_table_space.len/8);h++)
-        {
+	//The value area starts at the end of the node (and grows upward)
+	int valueStartAddr = fsTreeAddr + blockSize;
 
-                uint64_t j_key_header=0;
+	//If the node is the root, account for the info trailer 
+	if (rootNode)
+		valueStartAddr -= sizeof(btree_info_t);
 
-                fseek(apfs,keyStartAddressBtreeBtree,SEEK_SET);	   
-                fseek(apfs,keyValueStructure[h].k.off,SEEK_CUR);
+	//Seek to the table of contents
+	fseek(apfsImage, tableStartAddr, SEEK_SET);
 
-                fread(&j_key_header,1,8,apfs);
-                // Accessing the object typede
-                uint8_t objType=0;
-                objType=(j_key_header & OBJ_TYPE_MASK) >> OBJ_TYPE_SHIFT;
-                cur = j_key_header & OBJ_ID_MASK;
+	//Read the table of contents into an array
+	int tableSize = bNodeStruct.btn_nkeys * sizeof(toc_entry_varlen_t);
+	toc_entry_varlen_t tableEntriesVarLen[bNodeStruct.btn_nkeys];
+	fread(&tableEntriesVarLen, 1, tableSize, apfsImage);
 
-                dprintf("##############################################################3\n");
-                dprintf("The object Type is: %d & ID is %lu (at %0x)\n",objType, cur, ftell(apfs));
-                parseFSObjects(objType, apfs, keyValueStructure[h].k.len, valueStartAddressforfstree
-                                , keyValueStructure[h].v.off, keyValueStructure[h].v.len, &obj);
-                obj.prev_oid = cur;
+	if (args.fs_structure != 1)
+		printf("The size of keyvaluestruct is %i\n", tableSize);
 
-        }//for the table of contents
-        printf("\n");
+	//Iterate through the table
+	//Start from the end so that the first match is the latest version, since the B-Tree is sorted
+	int maxTocIndex = bNodeStruct.btn_nkeys - 1;
+
+	for (int entry_index = maxTocIndex; entry_index >= 0; entry_index--)
+	{
+		//Find the offset and length of the key and value
+		uint16_t keyOff = tableEntriesVarLen[entry_index].key_off;
+		uint16_t dataOff = tableEntriesVarLen[entry_index].data_off;
+		uint16_t keyLen = tableEntriesVarLen[entry_index].key_len;
+		uint16_t dataLen = tableEntriesVarLen[entry_index].data_len;
+
+		int valueAddr = valueStartAddr - dataOff;
+
+		//If this node is not a leaf, recurse to all children
+		if (!leafNode)
+		{
+			//Read the OID of the B-Node in the next layer
+			uint64_t nextBNodeOID;
+			fseek(apfsImage, valueAddr, SEEK_SET);
+			fread(&nextBNodeOID, 1, sizeof(uint64_t), apfsImage);
+
+			//Convert the OID to a physical address
+			uint64_t nextBNodeAddr = searchOmap(apfsImage, blockSize, omapAddr, nextBNodeOID);
+
+			//Recurse to all decendent nodes
+			parseFSTree(apfsImage, blockSize, omapAddr, nextBNodeAddr, args);
+		}
+		//If this node is a leaf, parse the FS object
+		else
+		{
+			//Read the key
+			uint64_t j_key_header = 0;
+			int keyAddr = keyStartAddr + keyOff;
+			fseek(apfsImage, keyAddr, SEEK_SET);
+			fread(&j_key_header, 1, keyLen, apfsImage);
+
+			//Parse the key header flags
+			uint8_t objType = (j_key_header & OBJ_TYPE_MASK) >> OBJ_TYPE_SHIFT;
+			cur = j_key_header & OBJ_ID_MASK;
+
+			parseFSObjects(objType, apfsImage, keyLen, fsTreeAddr, dataOff, dataLen, &obj);
+			obj.prev_oid = cur;
+		}
+	}
 }
 
 void parse_APFS(char* filename)
 {
-        FILE *apfs = NULL;
-        APFS_SuperBlk containerSuperBlk;
-        omap_phys_t omapStructure;
-        apfs_superblock_t volumeSuperBlock;
-        btree_node_phys_t fsTree;
-        int endOfOmapBtreeBtree=0;
-        APFS_SuperBlk super_blk = {0};
-        unsigned int size = 0;
-        uint32_t blockSize =0;
+	FILE *apfs = NULL;
+	APFS_SuperBlk containerSuperBlk;
+	omap_phys_t omapStructure;
+	apfs_superblock_t volumeSuperBlock;
+	int endOfOmapBtreeBtree=0;
+	APFS_SuperBlk super_blk = {0};
+	unsigned int size = 0;
 
-        if (NULL == (apfs = fopen (filename, "r")) ) {
-                printf("Unable to parse APFS: Error opening file %s!\n", filename);
-                return;
-        }
+	if (NULL == (apfs = fopen (filename, "r")) ) {
+		printf("Unable to parse APFS: Error opening file %s!\n", filename);
+		return;
+	}
 
-        if (parse_blk_header(apfs)) {
-                printf("Unable to parse APFS: Failed to parse Block header\n");
-                return;
-        }
+	if (parse_blk_header(apfs)) {
+		printf("Unable to parse APFS: Failed to parse Block header\n");
+		return;
+	}
 
-        containerSuperBlk=findValidSuperBlock(apfs);
-        omapStructure = parseValidContainerSuperBlock(apfs,containerSuperBlk, containerSuperBlk.ObjectsMapIdent);
-        volumeSuperBlock=findValidVolumeSuperBlock(apfs,omapStructure,containerSuperBlk);
-        fsTree=parseAPFSVolumeBlock(apfs,volumeSuperBlock,containerSuperBlk,&endOfOmapBtreeBtree);
-        parseFSTree(apfs,fsTree,endOfOmapBtreeBtree);
+	containerSuperBlk=findValidSuperBlock(apfs,args);
+	omapStructure = parseValidContainerSuperBlock(apfs,containerSuperBlk, containerSuperBlk.ObjectsMapIdent);
+	volumeSuperBlock=findValidVolumeSuperBlock(apfs,omapStructure,containerSuperBlk,args);
+	uint64_t omapAddr = parseAPFSVolumeBlock(apfs,volumeSuperBlock,containerSuperBlk,args);
+
+	//Find the address of the file system
+	uint32_t blockSize = containerSuperBlk.BlockSize;
+	// uint64_t omapAddr = volumeSuperBlock.apfs_omap_oid * blockSize;
+	uint64_t fsTreeOID = volumeSuperBlock.apfs_root_tree_oid;
+	uint64_t fsTreeAddr = searchOmap(apfs, blockSize, omapAddr, fsTreeOID) * blockSize;
+
+	//parse all file system objects
+	parseFSTree(apfs, blockSize, omapAddr, fsTreeAddr, args);
 }
