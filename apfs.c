@@ -841,7 +841,7 @@ apfs_superblock_t findValidVolumeSuperBlock(FILE *apfs,omap_phys_t omapStructure
 			{
 				oid = containerSuperBlk.VolumesIdents[noOfVolItr];
 				volumeSBAdress = searchOmap(apfs, containerSuperBlk.BlockSize, omapAddrPhys, oid);
-				readAndPrintVolumeSuperBlock(apfs,volumeSBAdress,containerSuperBlk,args);
+				volumeSuperBlock = readAndPrintVolumeSuperBlock(apfs,volumeSBAdress,containerSuperBlk,args);
 			}
 		}
 	}
