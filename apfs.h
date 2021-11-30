@@ -69,6 +69,30 @@
 #define DT_SOCK 12
 #define DT_WHT 14
 
+/* Debug Print API*/
+#define dprintf(f_, ...) if (args.debug_mode) printf((f_), ##__VA_ARGS__)
+
+/* ANSI Colours for printing */
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[34m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+static char * ToUp ( char *p )
+{
+	char *str = p;
+
+	while( *p )
+	{
+		*p=toupper( *p );
+		p++;
+	}
+	return str;
+}
+
 typedef uint8_t  tApFS_Uuid;
 typedef uint64_t tApFS_Ident;
 typedef uint64_t tApFS_Transaction;
@@ -583,14 +607,16 @@ struct fs_obj {
 
 //Function Declarations
 
-void parse_APFS(command_line_args, char*);	
-APFS_SuperBlk findValidSuperBlock( FILE *,command_line_args );
+extern command_line_args args;
+
+void parse_APFS(char*);	
+APFS_SuperBlk findValidSuperBlock( FILE *);
 omap_phys_t parseValidContainerSuperBlock( FILE *,APFS_SuperBlk , int);
-apfs_superblock_t findValidVolumeSuperBlock( FILE *,omap_phys_t,APFS_SuperBlk,command_line_args );
+apfs_superblock_t findValidVolumeSuperBlock( FILE *,omap_phys_t,APFS_SuperBlk);
 btree_node_phys_t readAndPrintBtree(FILE*);
 int compArray(uint8_t*, int, uint8_t*, int);
 int searchBTree(FILE *, uint32_t, uint8_t *,uint,uint, uint64_t *,btree_node_phys_t,int,uint64_t *);
-uint8_t searchOmap(FILE *, uint32_t , uint64_t ,btree_node_phys_t,int,uint64_t*);
-apfs_superblock_t readAndPrintVolumeSuperBlock(FILE*, uint64_t,APFS_SuperBlk,command_line_args);
+int searchOmap(FILE *, uint32_t , uint64_t ,btree_node_phys_t,int,uint64_t*);
+apfs_superblock_t readAndPrintVolumeSuperBlock(FILE*, uint64_t,APFS_SuperBlk);
 
 

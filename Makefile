@@ -9,8 +9,10 @@ OBJ = DMG.o base64.o apfs.o
 
 make:	$(OBJ)
 	$(CC) -o DMG $^ $(CFLAGS)
+	mv DMG APFSpy
 
 .PHONY: clean
 
 clean:
-	rm -rf *.o DMG decompressed* *.txt child* root parent
+	rm -rf *.o DMG decompressed* *.txt 'APFS Image Decompressed' APFSpy parent
+

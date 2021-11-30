@@ -94,6 +94,7 @@ typedef struct command_line_options {
 	uint8_t file;
 	unsigned char file_name[256];
 	uint8_t fs_structure;
+	uint8_t debug_mode;
 } command_line_args;
 
 FILE* readImageFile(FILE*, char* dmg_path);  // To open the file
