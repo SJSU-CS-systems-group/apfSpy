@@ -370,192 +370,188 @@ void handle_drec(char *dirName, j_drec_val_t dir)
         }
 }
 
-void parseFSObjects(uint8_t fileObjectType,FILE* apfs,uint16_t keyLength,int valueStartAddressforfstree
-                , uint16_t valueOffset, uint16_t valueLength, struct fs_obj *obj)
+void parseFSObjects(uint8_t fileObjectType,FILE* apfs,uint16_t keyLength, int valueAddr, uint16_t valueLength, struct fs_obj *obj)
 {	
-        char *filename = NULL;
-        uint64_t file_size = 0;
-        int i = 0;
+	char *filename = NULL;
+	uint64_t file_size = 0;
+	int i = 0;
 
-        if(APFS_TYPE_ANY == fileObjectType)
-        {
-                //("The objtype is APFS_TYPE_ANY\n");
-        }else if(APFS_TYPE_SNAP_METADATA == fileObjectType){
-                //("The objtype is APFS_TYPE_SNAP_METADATA\n");
-        }else if(APFS_TYPE_EXTENT ==fileObjectType){
-                //("The objtype is APFS_TYPE_EXTENT\n");
-        }else if(APFS_TYPE_INODE ==fileObjectType){
-                //("The objtype is APFS_TYPE_INODE\n");
-                j_inode_val_t inode = {0};
-                xf_blob_t blob = {0};
-                if (fseek(apfs, valueStartAddressforfstree - valueOffset, SEEK_SET)) {
-                        printf("Failed to seek to INDOE val!\n");
-                        return;
-                }
+	if(APFS_TYPE_ANY == fileObjectType)
+	{
+		//("The objtype is APFS_TYPE_ANY\n");
+	}else if(APFS_TYPE_SNAP_METADATA == fileObjectType){
+		//("The objtype is APFS_TYPE_SNAP_METADATA\n");
+	}else if(APFS_TYPE_EXTENT ==fileObjectType){
+		//("The objtype is APFS_TYPE_EXTENT\n");
+	}else if(APFS_TYPE_INODE ==fileObjectType){
+		//("The objtype is APFS_TYPE_INODE\n");
+		j_inode_val_t inode = {0};
+		xf_blob_t blob = {0};
+		if (fseek(apfs, valueAddr, SEEK_SET)) {
+			//("Failed to seek to INDOE val!\n");
+			return;
+		}
 
-                if (fread(&inode, 1, sizeof(inode), apfs) < 0) {
-                        printf("Error reading INODE!\n");
-                        return;
-                }
+		if (fread(&inode, 1, sizeof(inode), apfs) < 0) {
+			//("Error reading INODE!\n");
+			return;
+		}
 
-                if ((obj->prev_oid != inode.private_id) && (inode.parent_id != obj->prev_parent)) {
-                        if (parents.level > 1) {
-                                parents.level--;
-                                if (args.fs_structure == 2) {
-                                        if (chdir("./..") == -1) {
-                                                printf("Error changing to parent directory\n");
-                                                return;
-                                        }
-                                }
-                                printf("\n");
-                        }
-                }
+		if ((obj->prev_oid != inode.private_id) && (inode.parent_id != obj->prev_parent)) {
+			if (parents.level > 1) {
+				parents.level--;
+				if (chdir("./..") == -1) {
+					printf("Error changing to parent directory\n");
+					return;
+				}
+				printf("\n");
+			}
+		}
 
-                dprintf(" Private ID: %lu\n", inode.private_id);
-                dprintf(" Create time: %lu\n", inode.create_time);
-                dprintf(" MOD Time: %lu\n", inode.mod_time);
-                dprintf(" Change Time: %lu\n", inode.change_time);
-                dprintf(" Access Time: %lu\n", inode.access_time);
-                dprintf(" Internal Flags: %0x\n", inode.internal_flags);
-                dprintf(" Number of Children/links: %d\n", inode.nchildren);
-                dprintf(" Default Protection Class: %0x\n", inode.default_protection_class);
-                dprintf(" BSD Flags: %0x\n", inode.bsd_flags);
-                dprintf(" Owner: %u\n", inode.owner);
-                dprintf(" Group: %u\n", inode.group);
-                dprintf(" Mode: %u\n", inode.mode);
-                dprintf(" Uncompressed size: %lu\n", inode.uncompressed_size);
+		//printf(" Private ID: %lu\n", inode.private_id);
+		//(" Create time: %lu\n", inode.create_time);
+		//(" MOD Time: %lu\n", inode.mod_time);
+		//(" Change Time: %lu\n", inode.change_time);
+		//(" Access Time: %lu\n", inode.access_time);
+		//printf(" Internal Flags: %0x\n", inode.internal_flags);
+		//printf(" Number of Children/links: %d\n", inode.nchildren);
+		//(" Default Protection Class: %0x\n", inode.default_protection_class);
+		//printf(" BSD Flags: %0x\n", inode.bsd_flags);
+		//(" Owner: %u\n", inode.owner);
+		//(" Group: %u\n", inode.group);
+		//(" Mode: %u\n", inode.mode);
+		//(" Uncompressed size: %lu\n", inode.uncompressed_size);
 
-                if (fread(&blob, 1, sizeof(blob), apfs) < 0) {
-                        printf("Error reading INODE XF BLOBS!\n");
-                        return;
-                }
+		if (fread(&blob, 1, sizeof(blob), apfs) < 0) {
+			//("Error reading INODE XF BLOBS!\n");
+			return;
+		}
 
-                dprintf("Num Extends %u\n", blob.xf_num_exts);
-                dprintf("Used Data %u\n", blob.xf_used_data);
+		//("Num Extends %u\n", blob.xf_num_exts);
+		//("Used Data %u\n", blob.xf_used_data);
 
-                x_field_t *xfields = calloc (sizeof(x_field_t),  blob.xf_num_exts);
+		x_field_t *xfields = calloc (sizeof(x_field_t),  blob.xf_num_exts);
 
-                if (fread(xfields, sizeof(x_field_t), blob.xf_num_exts, apfs) < 0) {
-                        printf("Error reading INODE X FIELDS!\n");
-                        return;
-                }
+		if (fread(xfields, sizeof(x_field_t), blob.xf_num_exts, apfs) < 0) {
+			//("Error reading INODE X FIELDS!\n");
+			return;
+		}
 
-                for (i = 0; i < blob.xf_num_exts; ++i) {
-                        dprintf("[%d] Type %u\n", i, xfields[i].x_type);
-                        dprintf("[%d] TFlags %0x\n", i, xfields[i].x_flags);
-                        dprintf("[%d] TSize %u\n", i, xfields[i].x_size);
+		for (i = 0; i < blob.xf_num_exts; ++i) {
+			//printf("[%d] Type %u\n", i, xfields[i].x_type);
+			//printf("[%d] TFlags %0x\n", i, xfields[i].x_flags);
+			//("[%d] TSize %u\n", i, xfields[i].x_size);
 
-                        if (INO_EXT_TYPE_NAME == xfields[i].x_type) {
-                                filename = malloc (xfields[i].x_size);
-                                if (fread(filename, 1, xfields[i].x_size, apfs) < 0) {
-                                        printf("Error Reading File name from INODE!\n");
-                                } else {
-                                        if (is_parent(inode.private_id)) {
-                                                if (inode.private_id == ROOT_DIR_INO_NUM) {
-                                                        free(filename);
-                                                        filename = path;
-                                                }
+			if (INO_EXT_TYPE_NAME == xfields[i].x_type) {
+				filename = malloc (xfields[i].x_size);
+				if (fread(filename, 1, xfields[i].x_size, apfs) < 0) {
+					//("Error Reading File name from INODE!\n");
+				} else {
+					//("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+					if (is_parent(inode.private_id)) {
+						if (inode.private_id == ROOT_DIR_INO_NUM) {
+							free(filename);
+							filename = path;
+						}
 
-                                                if (args.fs_structure == 2) {
-                                                        if (chdir(filename) == -1) {
-                                                                printf("Error changing to %s directory\n", filename);
-                                                                return;
-                                                        }
-                                                }
+						if (chdir(filename) == -1) {
+							printf("Error changing to %s directory\n", filename);
+							return;
+						}
+				
+						printf("%*s" ANSI_COLOR_RESET, parents.level * 8, "");
+						printf(ANSI_COLOR_RED "\n%*s:\n", ++parents.level * 8, ToUp(filename));
+						printf("%*s" ANSI_COLOR_RESET, parents.level * 8, "");
+						obj->prev_parent = inode.private_id;
+					}
 
-                                                printf("%*s" ANSI_COLOR_RESET, parents.level * 8, "");
-                                                printf(ANSI_COLOR_RED "\n%*s:\n", ++parents.level * 8, ToUp(filename));
-                                                printf("%*s" ANSI_COLOR_RESET, parents.level * 8, "");
-                                                obj->prev_parent = inode.private_id;
-                                        }
+					//("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
+				}
+				obj->filename = filename;
 
-                                }
-                                obj->filename = filename;
+			} else if (INO_EXT_TYPE_DSTREAM == xfields[i].x_type) {
+				j_dstream_t dstream = {0};
 
-                        } else if (INO_EXT_TYPE_DSTREAM == xfields[i].x_type) {
-                                j_dstream_t dstream = {0};
+				if (fread(&dstream, sizeof(j_dstream_t), 1, apfs) < 0) {
+					//("Error reading dstream from INODE!\n");
+				} else {
+					//("DATA STREAM:\n");
+					file_size = le64toh(dstream.size);
+					//("Size %lu %lu\n", file_size, dstream.size);
+					//("Allocated Size %lu\n", dstream.alloced_size);
+					//("T Bytes Written %lu\n", dstream.total_bytes_written);
+					//("T Bytes Read %lu\n", dstream.total_bytes_read);
+				}
+			}
+		}
+		free(xfields);
+		// TODO: create obj with obj_id, filename, filesize and in dstream_id check obj_id and read data into file in blks 	
+	}else if(APFS_TYPE_XATTR ==fileObjectType){
+		j_xattr_key_t fileObjectkey_xattr ={0};
+		//("The objtype is APFS_TYPE_XATTR\n");
+	}else if(APFS_TYPE_SIBLING_LINK ==fileObjectType){
+		//("The objtype is APFS_TYPE_SIBLING_LINK\n");
+	}else if(APFS_TYPE_DSTREAM_ID ==fileObjectType){
+		//("The objtype is APFS_TYPE_DSTREAM_ID\n");
+	}else if(APFS_TYPE_CRYPTO_STATE ==fileObjectType){
+		//("The objtype is APFS_TYPE_CRYPTO_STATE\n");
+	}else if(APFS_TYPE_FILE_EXTENT ==fileObjectType){
+		//("The objtype is APFS_TYPE_FILE_EXTENT\n");
 
-                                if (fread(&dstream, sizeof(j_dstream_t), 1, apfs) < 0) {
-                                        printf("Error reading dstream from INODE!\n");
-                                } else {
-                                        dprintf("DATA STREAM:\n");
-                                        file_size = le64toh(dstream.size);
-                                        dprintf("Size %lu %lu\n", file_size, dstream.size);
-                                        dprintf("Allocated Size %lu\n", dstream.alloced_size);
-                                        dprintf("T Bytes Written %lu\n", dstream.total_bytes_written);
-                                        dprintf("T Bytes Read %lu\n", dstream.total_bytes_read);
-                                }
-                        }
-                }
-                free(xfields);
-                // TODO: create obj with obj_id, filename, filesize and in dstream_id check obj_id and read data into file in blks 	
-        }else if(APFS_TYPE_XATTR ==fileObjectType){
-                j_xattr_key_t fileObjectkey_xattr ={0};
-                //("The objtype is APFS_TYPE_XATTR\n");
-        }else if(APFS_TYPE_SIBLING_LINK ==fileObjectType){
-                //("The objtype is APFS_TYPE_SIBLING_LINK\n");
-        }else if(APFS_TYPE_DSTREAM_ID ==fileObjectType){
-                //("The objtype is APFS_TYPE_DSTREAM_ID\n");
-        }else if(APFS_TYPE_CRYPTO_STATE ==fileObjectType){
-                //("The objtype is APFS_TYPE_CRYPTO_STATE\n");
-        }else if(APFS_TYPE_FILE_EXTENT ==fileObjectType){
-                //("The objtype is APFS_TYPE_FILE_EXTENT\n");
+		j_file_extent_val_t extend = {0};
 
-                j_file_extent_val_t extend = {0};
+		if (fseek(apfs, valueAddr, SEEK_SET)) {
+			//("Failed to seek to INDOE val!\n");
+			return;
+		}
 
-                if (fseek(apfs, valueStartAddressforfstree - valueOffset, SEEK_SET)) {
-                        printf("Failed to seek to INDOE val!\n");
-                        return;
-                }
+		if (fread(&extend, 1, sizeof(extend), apfs) < 0) {
+			//("Error Reading Extend!\n");
+			return;
+		}
 
-                if (fread(&extend, 1, sizeof(extend), apfs) < 0) {
-                        printf("Error Reading Extend!\n");
-                        return;
-                }
+		//("Length = %lu\n", extend.len_and_flags & J_FILE_EXTENT_LEN_MASK);
+		//("Flags = %lu\n", (extend.len_and_flags & J_FILE_EXTENT_FLAG_MASK) >> J_FILE_EXTENT_FLAG_SHIFT);
+		//("Phy Block Num = %0x\n", extend.phys_block_num);
+		//("Crypto ID = %0x\n", extend.crypto_id);
+		seekNprint(extend.phys_block_num, extend.len_and_flags & J_FILE_EXTENT_LEN_MASK, apfs, obj->filename);
 
-                dprintf("Length = %lu\n", extend.len_and_flags & J_FILE_EXTENT_LEN_MASK);
-                dprintf("Flags = %lu\n", (extend.len_and_flags & J_FILE_EXTENT_FLAG_MASK) >> J_FILE_EXTENT_FLAG_SHIFT);
-                dprintf("Phy Block Num = %0x\n", extend.phys_block_num);
-                dprintf("Crypto ID = %0x\n", extend.crypto_id);
-                seekNprint(extend.phys_block_num, extend.len_and_flags & J_FILE_EXTENT_LEN_MASK, apfs, obj->filename);
+	}else if(APFS_TYPE_DIR_REC ==fileObjectType){
 
-        }else if(APFS_TYPE_DIR_REC ==fileObjectType){
+		//("The objtype is APFS_TYPE_DIR_REC %0x\n", ftell(apfs));
 
-                dprintf("The objtype is APFS_TYPE_DIR_REC %0x\n", ftell(apfs));
+		j_drec_hashed_key_t fileObjectkey_dir={0};
+		j_drec_val_t  fileObject_dir_value={0};
+		char dirName[keyLength - 12];
+		int result = fread(&fileObjectkey_dir,1,4,apfs);
 
-                j_drec_hashed_key_t fileObjectkey_dir={0};
-                j_drec_val_t  fileObject_dir_value={0};
-                char dirName[keyLength - 12];
-                int result = fread(&fileObjectkey_dir,1,4,apfs);
+		//("The result of fread is %d",result);
+		fread(&dirName,1,sizeof(dirName),apfs);
+		dirName[keyLength - 12]='\0';
+		// Print the contents of the directory key
+		//(" The directory length is :%d\n",fileObjectkey_dir.name_len_and_hash & J_DREC_LEN_MASK);
 
-                dprintf("The result of fread is %d",result);
-                fread(&dirName,1,sizeof(dirName),apfs);
-                dirName[keyLength - 12]='\0';
+		fseek(apfs,valueAddr,SEEK_SET);
+		fread(&fileObject_dir_value,1,valueLength,apfs);
 
-                /* Print the contents of the directory key */
-                dprintf(" The directory length is :%d\n",fileObjectkey_dir.name_len_and_hash & J_DREC_LEN_MASK);
+		handle_drec(dirName, fileObject_dir_value);
 
-                fseek(apfs,valueStartAddressforfstree - valueOffset,SEEK_SET);
-                fread(&fileObject_dir_value,1,valueLength,apfs);
-
-                handle_drec(dirName, fileObject_dir_value);
-
-                dprintf("The directory name is: %s\n", dirName);
-                dprintf("file id is  %lu\n",fileObject_dir_value.file_id);
-                dprintf("The date added is %lu\n",fileObject_dir_value.date_added);
-                dprintf("The flags for the directory are %x\n",fileObject_dir_value.flags & DREC_TYPE_MASK);
-        }else if(APFS_TYPE_DIR_STATS ==fileObjectType){
-                //("The objtype is APFS_TYPE_DIR_STATS\n");
-                j_dir_stats_key_t fileObjectkey_dirStat={0};
-        }else if(APFS_TYPE_SNAP_NAME ==fileObjectType){
-                //("The objtype is APFS_TYPE_SNAP_NAME\n");
-        }else if(APFS_TYPE_SIBLING_MAP ==fileObjectType){
-                //("The objtype is APFS_TYPE_SIBLING_MAP\n");
-        }else if(APFS_TYPE_FILE_INFO ==fileObjectType){
-                //("The objtype is APFS_TYPE_FILE_INFO\n");
-        }else if(APFS_TYPE_MAX ==fileObjectType){
-                //("The objtype is APFS_TYPE_MAX\n");
-        }
+		//printf("The directory name is: %s\n", dirName);
+		//printf("file id is  %lu\n",fileObject_dir_value.file_id);
+		//("The date added is %lu\n",fileObject_dir_value.date_added);
+		//printf("The flags for the directory are %x\n",fileObject_dir_value.flags & DREC_TYPE_MASK);
+	}else if(APFS_TYPE_DIR_STATS ==fileObjectType){
+		//("The objtype is APFS_TYPE_DIR_STATS\n");
+		j_dir_stats_key_t fileObjectkey_dirStat={0};
+	}else if(APFS_TYPE_SNAP_NAME ==fileObjectType){
+		//("The objtype is APFS_TYPE_SNAP_NAME\n");
+	}else if(APFS_TYPE_SIBLING_MAP ==fileObjectType){
+		//("The objtype is APFS_TYPE_SIBLING_MAP\n");
+	}else if(APFS_TYPE_FILE_INFO ==fileObjectType){
+		//("The objtype is APFS_TYPE_FILE_INFO\n");
+	}else if(APFS_TYPE_MAX ==fileObjectType){
+		//("The objtype is APFS_TYPE_MAX\n");
+	}
 }
 
 /*
@@ -1019,14 +1015,8 @@ void parseFSTree(FILE *apfsImage, uint32_t blockSize, uint64_t omapAddr, uint64_
 	toc_entry_varlen_t tableEntriesVarLen[bNodeStruct.btn_nkeys];
 	fread(&tableEntriesVarLen, 1, tableSize, apfsImage);
 
-	if (args.fs_structure != 1)
-		printf("The size of keyvaluestruct is %i\n", tableSize);
-
 	//Iterate through the table
-	//Start from the end so that the first match is the latest version, since the B-Tree is sorted
-	int maxTocIndex = bNodeStruct.btn_nkeys - 1;
-
-	for (int entry_index = maxTocIndex; entry_index >= 0; entry_index--)
+	for (int entry_index = 0; entry_index < bNodeStruct.btn_nkeys; entry_index++)
 	{
 		//Find the offset and length of the key and value
 		uint16_t keyOff = tableEntriesVarLen[entry_index].key_off;
@@ -1045,7 +1035,7 @@ void parseFSTree(FILE *apfsImage, uint32_t blockSize, uint64_t omapAddr, uint64_
 			fread(&nextBNodeOID, 1, sizeof(uint64_t), apfsImage);
 
 			//Convert the OID to a physical address
-			uint64_t nextBNodeAddr = searchOmap(apfsImage, blockSize, omapAddr, nextBNodeOID);
+			uint64_t nextBNodeAddr = searchOmap(apfsImage, blockSize, omapAddr, nextBNodeOID) * blockSize;
 
 			//Recurse to all decendent nodes
 			parseFSTree(apfsImage, blockSize, omapAddr, nextBNodeAddr, args);
@@ -1063,7 +1053,7 @@ void parseFSTree(FILE *apfsImage, uint32_t blockSize, uint64_t omapAddr, uint64_
 			uint8_t objType = (j_key_header & OBJ_TYPE_MASK) >> OBJ_TYPE_SHIFT;
 			cur = j_key_header & OBJ_ID_MASK;
 
-			parseFSObjects(objType, apfsImage, keyLen, fsTreeAddr, dataOff, dataLen, &obj);
+			parseFSObjects(objType, apfsImage, keyLen, valueAddr, dataLen, &obj);
 			obj.prev_oid = cur;
 		}
 	}
