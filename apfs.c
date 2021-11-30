@@ -780,7 +780,7 @@ If -v option is given : Details of all Volumes are printed.
 If -v <Vol Id> is given :  ONly that particular Vol Id's details are printed.
 
  */
-apfs_superblock_t readAndPrintVolumeSuperBlock(FILE* apfs, uint64_t volumeSBAdress,APFS_SuperBlk containerSuperBlk)
+apfs_superblock_t readAndPrintVolumeSuperBlock(FILE* apfs, uint64_t volumeSBAdress,APFS_SuperBlk containerSuperBlk,command_line_args args)
 {
         apfs_superblock_t volumeSuperBlock;
         // Go to the Address of Volume Super Block and print it.
@@ -1079,9 +1079,9 @@ void parse_APFS(char* filename)
 		return;
 	}
 
-	containerSuperBlk=findValidSuperBlock(apfs,args);
+	containerSuperBlk=findValidSuperBlock(apfs);
 	omapStructure = parseValidContainerSuperBlock(apfs,containerSuperBlk, containerSuperBlk.ObjectsMapIdent);
-	volumeSuperBlock=findValidVolumeSuperBlock(apfs,omapStructure,containerSuperBlk,args);
+	volumeSuperBlock=findValidVolumeSuperBlock(apfs,omapStructure,containerSuperBlk);
 	uint64_t omapAddr = parseAPFSVolumeBlock(apfs,volumeSuperBlock,containerSuperBlk,args);
 
 	//Find the address of the file system
