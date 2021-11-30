@@ -21,7 +21,7 @@ Installation instructions for VisualStudio can be found [here](https://www.youtu
 
 ## Run Program
 
-# Usage
+### Usage
 ./APFSpy <DMG_FILE>                             Prints the Disk Image Structure
                         -c                      Container Superblock Information
                         -v [ Volume ID ]        All Vol SuperBlock Information | Specified Volume's Information
