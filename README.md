@@ -21,17 +21,17 @@ Installation instructions for VisualStudio can be found [here](https://www.youtu
 
 ## Run Program
 
-On Linux run the Makefile to build the project. Then execute the DMG binary program.
-```sh
-make clean
-make
-./APFSpy <DMG_FILE> {Options}
-
-## Usage
+# Usage
 ./APFSpy <DMG_FILE>                             Prints the Disk Image Structure
                         -c                      Container Superblock Information
                         -v [ Volume ID ]        All Vol SuperBlock Information | Specified Volume's Information
                         -f <file_name>          Displays file content
                         -v <Volume_ID> -fs      Displays File system Structure
                         -d                      Debug Mode
+On Linux run the Makefile to build the project. Then execute the DMG binary program.
+```sh
+make clean
+make
+./APFSpy <DMG_FILE> {Options}
+
 ```
