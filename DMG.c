@@ -187,6 +187,9 @@ int checkCommandLineArguments(char** argv, int argc)
                                 break;
                         case 'v':
                         case 'V':
+						        if (argc == 3) {
+                                        args.volume = 1;
+                                } else {
                                 args.volume = 1;
                                 /* Make sure that argument contains nothing but digits */
                                 if (argv[3]) {
@@ -205,6 +208,7 @@ int checkCommandLineArguments(char** argv, int argc)
                                                 result = 1;
                                         }
                                 }
+								}
                                 break;
                         default:
                                 printf("Invalid parameter!\n");
