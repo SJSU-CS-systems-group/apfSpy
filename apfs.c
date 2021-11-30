@@ -1047,7 +1047,7 @@ void parseFSTree(FILE *apfsImage, uint32_t blockSize, uint64_t omapAddr, uint64_
 			uint64_t j_key_header = 0;
 			int keyAddr = keyStartAddr + keyOff;
 			fseek(apfsImage, keyAddr, SEEK_SET);
-			fread(&j_key_header, 1, keyLen, apfsImage);
+			fread(&j_key_header, 1, sizeof(uint64_t), apfsImage);
 
 			//Parse the key header flags
 			uint8_t objType = (j_key_header & OBJ_TYPE_MASK) >> OBJ_TYPE_SHIFT;
