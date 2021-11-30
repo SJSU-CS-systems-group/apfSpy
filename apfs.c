@@ -700,12 +700,6 @@ int searchBTree(FILE *apfsImage, uint32_t blockSize, uint64_t bNodeAddr,  uint8_
 			//If the search key is larger than or equal to this entry, go to its child node
 			if (keyComp == -1 || keyComp == 0)
 			{
-				//Find the data offset of the previous entry
-				if (fixedSize)
-					dataOff = tableEntriesFixed[entry_index].data_off;
-				else
-					dataOff = tableEntriesVarLen[entry_index].data_off;
-
 				int valueAddr = valueStartAddr - dataOff;
 				fseek(apfsImage, valueAddr, SEEK_SET);
 				fread(nextBNode, 1, sizeof(uint64_t), apfsImage);
