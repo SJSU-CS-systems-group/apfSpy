@@ -615,8 +615,8 @@ omap_phys_t parseValidContainerSuperBlock( FILE *,APFS_SuperBlk , int);
 apfs_superblock_t findValidVolumeSuperBlock( FILE *,omap_phys_t,APFS_SuperBlk);
 btree_node_phys_t readAndPrintBtree(FILE*);
 int compArray(uint8_t*, int, uint8_t*, int);
-int searchBTree(FILE *, uint32_t, uint8_t *,uint,uint, uint64_t *,btree_node_phys_t,int,uint64_t *);
-int searchOmap(FILE *, uint32_t , uint64_t ,btree_node_phys_t,int,uint64_t*);
-apfs_superblock_t readAndPrintVolumeSuperBlock(FILE*, uint64_t,APFS_SuperBlk);
+int searchBTree(FILE*, uint32_t, uint64_t,  uint8_t*, uint, uint8_t*, uint, uint64_t*);
+uint64_t searchOmap(FILE*, uint32_t, uint64_t, uint64_t);
+apfs_superblock_t readAndPrintVolumeSuperBlock(FILE*, uint64_t,APFS_SuperBlk,command_line_args);
 
 
