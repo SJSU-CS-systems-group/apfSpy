@@ -900,7 +900,7 @@ uint64_t parseAPFSVolumeBlock(FILE *apfs, apfs_superblock_t volumeSuperBlock,APF
 	tApFS_0B_ObjectsMap_Value_t value;
 	fread(&key,1,16,apfs);
 	if (args.fs_structure != 1)
-		printf("The oid and xid are %lu and %lu\n",key.ObjectIdent,key.Transaction);
+		dprintf("The oid and xid are %lu and %lu\n",key.ObjectIdent,key.Transaction);
 
 	// check if it is root node or leaf node
 	// find the info address for root node.
