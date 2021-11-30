@@ -187,28 +187,28 @@ int checkCommandLineArguments(char** argv, int argc)
                                 break;
                         case 'v':
                         case 'V':
-						        if (argc == 3) {
+                                if (argc == 3) {
                                         args.volume = 1;
                                 } else {
-                                args.volume = 1;
-                                /* Make sure that argument contains nothing but digits */
-                                if (argv[3]) {
-                                        if(strspn(argv[3], "0123456789") != strlen(argv[3])) {
-                                                printf("Volume id has to be an interger!\n");
-                                                result = 1;
-                                        } else {
-                                                args.volume_ID = atoi(argv[3]);
+                                        args.volume = 1;
+                                        /* Make sure that argument contains nothing but digits */
+                                        if (argv[3]) {
+                                                if(strspn(argv[3], "0123456789") != strlen(argv[3])) {
+                                                        printf("Volume id has to be an interger!\n");
+                                                        result = 1;
+                                                } else {
+                                                        args.volume_ID = atoi(argv[3]);
+                                                }
+                                        }
+                                        if (argv[4]) {
+                                                if ((strcmp(argv[4], "-fs") == 0) || (strcmp(argv[4], "-FS") == 0)) {
+                                                        args.fs_structure = 2;
+                                                } else {
+                                                        printf("Please use \"-fs\" to see the file system structure\n");
+                                                        result = 1;
+                                                }
                                         }
                                 }
-                                if (argv[4]) {
-                                        if ((strcmp(argv[4], "-fs") == 0) || (strcmp(argv[4], "-FS") == 0)) {
-                                                args.fs_structure = 2;
-                                        } else {
-                                                printf("Please use \"-fs\" to see the file system structure\n");
-                                                result = 1;
-                                        }
-                                }
-								}
                                 break;
                         default:
                                 printf("Invalid parameter!\n");
@@ -276,5 +276,3 @@ int main(int argc, char** argv)
 
         return 0;
 }
-
-

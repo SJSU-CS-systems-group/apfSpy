@@ -14,5 +14,5 @@ make:	$(OBJ)
 .PHONY: clean
 
 clean:
-	rm -rf *.o DMG decompressed* *.txt 'APFS Image Decompressed' APFSpy parent
+	rm -rf *.o DMG decompressed* *.txt 'APFS Image Decompressed' APFSpy parent 'Many Files'
 
